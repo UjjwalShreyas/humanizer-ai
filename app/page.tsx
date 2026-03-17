@@ -24,28 +24,25 @@ function GaugeMeter({ percentage, label }: { percentage: number | null; label: s
       <div style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--champ-muted)", marginBottom: 12 }}>{label}</div>
       <div style={{ position: "relative", width: 160, height: 90, margin: "0 auto" }}>
         <svg viewBox="0 0 160 90" width="160" height="90">
-          {/* Track */}
           <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="rgba(247,231,206,0.08)" strokeWidth="12" strokeLinecap="round" />
-          {/* Colored arc */}
           {percentage !== null && (
             <path
               d="M 15 80 A 65 65 0 0 1 145 80"
               fill="none"
-              stroke={`url(#grad-${label.replace(/\s/g,'')})`}
+              stroke={"url(#grad-" + label.replace(/\s/g, "") + ")"}
               strokeWidth="12"
               strokeLinecap="round"
-              strokeDasharray={`${(percentage / 100) * 204} 204`}
+              strokeDasharray={(percentage / 100) * 204 + " 204"}
             />
           )}
           <defs>
-            <linearGradient id={`grad-${label.replace(/\s/g,'')}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={"grad-" + label.replace(/\s/g, "")} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#22c55e" />
               <stop offset="50%" stopColor="#f59e0b" />
               <stop offset="100%" stopColor="#ef4444" />
             </linearGradient>
           </defs>
-          {/* Needle */}
-          <g transform={`rotate(${rotation}, 80, 80)`}>
+          <g transform={"rotate(" + rotation + ", 80, 80)"}>
             <line x1="80" y1="80" x2="80" y2="28" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
             <circle cx="80" cy="80" r="5" fill={color} />
           </g>
@@ -106,12 +103,11 @@ export default function Home() {
       const p = document.createElement("div");
       p.className = "particle";
       const size = Math.random() * 2.5 + 0.5;
-      p.style.cssText = `left:${Math.random() * 100}%;width:${size}px;height:${size}px;background:rgba(${Math.random() > 0.5 ? "247,231,206" : "196,30,83"},${Math.random() * 0.6 + 0.2});animation-duration:${Math.random() * 18 + 8}s;animation-delay:${Math.random() * 18}s`;
+      p.style.cssText = "left:" + Math.random() * 100 + "%;width:" + size + "px;height:" + size + "px;background:rgba(" + (Math.random() > 0.5 ? "247,231,206" : "196,30,83") + "," + (Math.random() * 0.6 + 0.2) + ");animation-duration:" + (Math.random() * 18 + 8) + "s;animation-delay:" + Math.random() * 18 + "s";
       pc.appendChild(p);
     }
   }, []);
 
-  // Auto-detect input after user stops typing
   useEffect(() => {
     if (!inputText.trim() || wordCount < 10) { setInputAI(null); return; }
     if (detectTimer.current) clearTimeout(detectTimer.current);
@@ -158,6 +154,13 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const footerLinks = [
+    ["Terms of Service", "/terms"],
+    ["Privacy Policy", "/privacy"],
+    ["Disclaimer", "/disclaimer"],
+    ["GitHub", "https://github.com/UjjwalShreyas/humanizer-ai"],
+  ];
+
   return (
     <>
       <style>{`
@@ -200,6 +203,8 @@ export default function Home() {
         .copy-btn{background:transparent;border:1px solid rgba(247,231,206,0.12);color:var(--champ-muted);font-size:11px;padding:4px 14px;border-radius:6px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.2s;letter-spacing:0.05em}
         .copy-btn:hover{border-color:var(--champ-dim);color:var(--champ)}
         .detecting-badge{font-size:10px;color:var(--burg-glow);letter-spacing:0.08em;animation:pdot 1s infinite}
+        .footer-link{color:rgba(247,231,206,0.25);text-decoration:none;font-size:11px;letter-spacing:0.06em;transition:color 0.2s}
+        .footer-link:hover{color:rgba(247,231,206,0.6)}
       `}</style>
 
       <div ref={curRef} className="cursor" />
@@ -212,10 +217,10 @@ export default function Home() {
 
       <main style={{ position: "relative", zIndex: 10, maxWidth: 980, margin: "0 auto", padding: "48px 20px 80px", fontFamily: "'Outfit', sans-serif", color: "var(--champ)" }}>
 
-        {/* HEADER */}
         <div style={{ textAlign: "center", marginBottom: 48, animation: "fadeDown 1s ease both" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid rgba(247,231,206,0.15)", padding: "6px 18px", borderRadius: 100, fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--champ-muted)", marginBottom: 24, background: "rgba(125,10,46,0.15)" }}>
-<span className="pulse-dot" /> Free · Private · Open Source          </div>
+            <span className="pulse-dot" /> Free · Private · Open Source
+          </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(42px, 8vw, 80px)", fontWeight: 300, lineHeight: 1.05, letterSpacing: -2, color: "var(--champ-bright)", marginBottom: 6 }}>
             Your AI text,<br /><span className="accent">undetectable.</span>
           </h1>
@@ -226,7 +231,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* STATS */}
         <div style={{ display: "flex", justifyContent: "center", gap: "clamp(24px, 5vw, 56px)", marginBottom: 44, animation: "fadeUp 1s 0.3s ease both", flexWrap: "wrap" }}>
           {[["∞", "Free uses"], ["0", "Data stored"], ["100%", "On-device"]].map(([num, label]) => (
             <div key={label} style={{ textAlign: "center" }}>
@@ -236,13 +240,12 @@ export default function Home() {
           ))}
         </div>
 
-        {/* EDITOR */}
         <div className="editor">
           <div className="panel">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid rgba(247,231,206,0.06)" }}>
               <span style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--champ-muted)" }}>AI Text Input</span>
               <span style={{ fontSize: 11, color: "rgba(247,231,206,0.2)" }}>
-                {detecting ? <span className="detecting-badge">● Analyzing...</span> : `${wordCount} words`}
+                {detecting ? <span className="detecting-badge">● Analyzing...</span> : wordCount + " words"}
               </span>
             </div>
             <textarea
@@ -260,7 +263,7 @@ export default function Home() {
             <div style={{ padding: 16, minHeight: 220, fontSize: 14, lineHeight: 1.85, color: "var(--champ-bright)", wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
               {loading ? (
                 <div>
-                  {[100, 85, 95, 70, 80].map((w, i) => (<div key={i} className="skel-line" style={{ width: `${w}%` }} />))}
+                  {[100, 85, 95, 70, 80].map((w, i) => (<div key={i} className="skel-line" style={{ width: w + "%" }} />))}
                   <div style={{ fontSize: 12, color: "var(--burg-glow)", marginTop: 14, letterSpacing: "0.06em" }}>✦ Rewriting your text...</div>
                 </div>
               ) : outputText ? outputText : (
@@ -270,7 +273,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* GAUGES */}
         <div className="gauges">
           <div className="gauge-panel">
             <GaugeMeter percentage={inputAI} label="Input AI Score" />
@@ -280,24 +282,21 @@ export default function Home() {
           </div>
         </div>
 
-        {/* BUTTON */}
         <div style={{ display: "flex", justifyContent: "center", animation: "fadeUp 1s 0.7s ease both" }}>
           <button className="main-btn" onClick={handleHumanize} disabled={loading || !inputText.trim()}>
             {loading ? "Humanizing..." : "✦ Humanize Text"}
           </button>
         </div>
 
-       <div style={{ textAlign: "center", marginTop: 40, fontSize: 11, color: "rgba(247,231,206,0.18)", letterSpacing: "0.08em", lineHeight: 2 }}>
-  <div style={{ textTransform: "uppercase" }}>Your text is never stored · Powered by Groq · Always free</div>
-  <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 24 }}>
-{[["Terms of Service", "/terms"], ["Privacy Policy", "/privacy"], ["Disclaimer", "/disclaimer"], ["GitHub", "https://github.com/ujjwa/humanizer-ai"]].map(([label, href]) => (``      <a key={href} href={href} style={{ color: "rgba(247,231,206,0.25)", textDecoration: "none", fontSize: 11, letterSpacing: "0.06em", transition: "color 0.2s" }}
-        onMouseEnter={e => (e.currentTarget.style.color = "rgba(247,231,206,0.6)")}
-        onMouseLeave={e => (e.currentTarget.style.color = "rgba(247,231,206,0.25)")}>
-        {label}
-      </a>
-    ))}
-  </div>
-</div>
+        <div style={{ textAlign: "center", marginTop: 40, fontSize: 11, color: "rgba(247,231,206,0.18)", letterSpacing: "0.08em", lineHeight: 2 }}>
+          <div style={{ textTransform: "uppercase" }}>Your text is never stored · Powered by Groq · Always free</div>
+          <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap" }}>
+            {footerLinks.map(([label, href]) => (
+              <a key={href} href={href} className="footer-link">{label}</a>
+            ))}
+          </div>
+        </div>
+
       </main>
     </>
   );
