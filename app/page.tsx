@@ -1,65 +1,306 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect, useRef } from "react";
+
+function GaugeMeter({ percentage, label }: { percentage: number | null; label: string }) {
+  const getColor = (pct: number) => {
+    if (pct <= 30) return "#22c55e";
+    if (pct <= 60) return "#f59e0b";
+    if (pct <= 80) return "#f97316";
+    return "#ef4444";
+  };
+
+  const getLabel = (pct: number) => {
+    if (pct <= 30) return "Likely Human";
+    if (pct <= 60) return "Mixed";
+    if (pct <= 80) return "Likely AI";
+    return "AI Generated";
+  };
+
+  const rotation = percentage !== null ? (percentage / 100) * 180 - 90 : -90;
+  const color = percentage !== null ? getColor(percentage) : "#555";
+
+  return (
+    <div style={{ textAlign: "center", padding: "20px 16px" }}>
+      <div style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--champ-muted)", marginBottom: 12 }}>{label}</div>
+      <div style={{ position: "relative", width: 160, height: 90, margin: "0 auto" }}>
+        <svg viewBox="0 0 160 90" width="160" height="90">
+          {/* Track */}
+          <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="rgba(247,231,206,0.08)" strokeWidth="12" strokeLinecap="round" />
+          {/* Colored arc */}
+          {percentage !== null && (
+            <path
+              d="M 15 80 A 65 65 0 0 1 145 80"
+              fill="none"
+              stroke={`url(#grad-${label.replace(/\s/g,'')})`}
+              strokeWidth="12"
+              strokeLinecap="round"
+              strokeDasharray={`${(percentage / 100) * 204} 204`}
+            />
+          )}
+          <defs>
+            <linearGradient id={`grad-${label.replace(/\s/g,'')}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#22c55e" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#ef4444" />
+            </linearGradient>
+          </defs>
+          {/* Needle */}
+          <g transform={`rotate(${rotation}, 80, 80)`}>
+            <line x1="80" y1="80" x2="80" y2="28" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="80" cy="80" r="5" fill={color} />
+          </g>
+        </svg>
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, textAlign: "center" }}>
+          {percentage !== null ? (
+            <>
+              <div style={{ fontSize: 22, fontWeight: 600, color, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 }}>{percentage}%</div>
+              <div style={{ fontSize: 10, color: "rgba(247,231,206,0.4)", marginTop: 2, letterSpacing: "0.08em" }}>{getLabel(percentage)}</div>
+            </>
+          ) : (
+            <div style={{ fontSize: 11, color: "rgba(247,231,206,0.2)", fontStyle: "italic" }}>—</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
+  const [inputText, setInputText] = useState("");
+  const [outputText, setOutputText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [inputAI, setInputAI] = useState<number | null>(null);
+  const [outputAI, setOutputAI] = useState<number | null>(null);
+  const curRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const ptclRef = useRef<HTMLDivElement>(null);
+  const detectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const wordCount = inputText.trim() === "" ? 0 : inputText.trim().split(/\s+/).length;
+
+  useEffect(() => {
+    const isDesktop = window.matchMedia("(pointer:fine)").matches;
+    if (isDesktop && curRef.current && ringRef.current) {
+      let mx = 0, my = 0, rx = 0, ry = 0;
+      const move = (e: MouseEvent) => {
+        mx = e.clientX; my = e.clientY;
+        if (curRef.current) { curRef.current.style.left = mx + "px"; curRef.current.style.top = my + "px"; }
+      };
+      document.addEventListener("mousemove", move);
+      const anim = () => {
+        rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+        if (ringRef.current) { ringRef.current.style.left = rx + "px"; ringRef.current.style.top = ry + "px"; }
+        requestAnimationFrame(anim);
+      };
+      anim();
+      return () => document.removeEventListener("mousemove", move);
+    }
+  }, []);
+
+  useEffect(() => {
+    const pc = ptclRef.current;
+    if (!pc) return;
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement("div");
+      p.className = "particle";
+      const size = Math.random() * 2.5 + 0.5;
+      p.style.cssText = `left:${Math.random() * 100}%;width:${size}px;height:${size}px;background:rgba(${Math.random() > 0.5 ? "247,231,206" : "196,30,83"},${Math.random() * 0.6 + 0.2});animation-duration:${Math.random() * 18 + 8}s;animation-delay:${Math.random() * 18}s`;
+      pc.appendChild(p);
+    }
+  }, []);
+
+  // Auto-detect input after user stops typing
+  useEffect(() => {
+    if (!inputText.trim() || wordCount < 10) { setInputAI(null); return; }
+    if (detectTimer.current) clearTimeout(detectTimer.current);
+    detectTimer.current = setTimeout(async () => {
+      setDetecting(true);
+      try {
+        const res = await fetch("/api/detect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: inputText }),
+        });
+        const data = await res.json();
+        setInputAI(data.ai_probability ?? null);
+      } catch { setInputAI(null); }
+      setDetecting(false);
+    }, 1500);
+    return () => { if (detectTimer.current) clearTimeout(detectTimer.current); };
+  }, [inputText, wordCount]);
+
+  const handleHumanize = async () => {
+    if (!inputText.trim()) return;
+    setLoading(true);
+    setOutputText("");
+    setOutputAI(null);
+    try {
+      const res = await fetch("/api/humanize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: inputText }),
+      });
+      const data = await res.json();
+      setOutputText(data.humanized_text || data.error);
+      setOutputAI(data.ai_probability_after ?? null);
+    } catch {
+      setOutputText("Something went wrong. Check your API key.");
+    }
+    setLoading(false);
+  };
+
+  const handleCopy = () => {
+    if (!outputText) return;
+    navigator.clipboard.writeText(outputText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--burg:#7D0A2E;--burg-glow:#C41E53;--champ:#F7E7CE;--champ-bright:#FDF6EC;--champ-dim:#D4B896;--champ-muted:#A08060;--bg:#0A0305}
+        body{background:var(--bg);font-family:'Outfit',sans-serif;color:var(--champ);min-height:100vh;overflow-x:hidden}
+        @media(pointer:fine){body{cursor:none}}
+        .cursor,.cursor-ring{position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%)}
+        .cursor{width:8px;height:8px;background:var(--champ-dim);border-radius:50%;mix-blend-mode:difference}
+        .cursor-ring{width:28px;height:28px;border:1px solid rgba(247,231,206,0.25);border-radius:50%;z-index:9998;transition:all 0.12s ease}
+        @media(pointer:coarse){.cursor,.cursor-ring{display:none}}
+        .orb{position:absolute;border-radius:50%;filter:blur(90px);animation:drift ease-in-out infinite}
+        .orb1{width:600px;height:600px;background:radial-gradient(circle,rgba(125,10,46,0.7),transparent 70%);top:-150px;left:-150px;animation-duration:20s}
+        .orb2{width:450px;height:450px;background:radial-gradient(circle,rgba(164,16,64,0.5),transparent 70%);top:50%;right:-100px;animation-duration:26s;animation-delay:-10s}
+        .orb3{width:500px;height:500px;background:radial-gradient(circle,rgba(100,5,30,0.5),transparent 70%);bottom:-100px;left:25%;animation-duration:22s;animation-delay:-5s}
+        @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(50px,-50px) scale(1.08)}66%{transform:translate(-40px,50px) scale(0.96)}}
+        .grid-bg{position:fixed;inset:0;z-index:1;pointer-events:none;background-image:linear-gradient(rgba(247,231,206,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(247,231,206,0.03) 1px,transparent 1px);background-size:72px 72px}
+        .particle{position:absolute;border-radius:50%;animation:rise linear infinite;opacity:0}
+        @keyframes rise{0%{transform:translateY(100vh);opacity:0}10%{opacity:0.7}90%{opacity:0.2}100%{transform:translateY(-80px);opacity:0}}
+        .pulse-dot{width:6px;height:6px;background:var(--burg-glow);border-radius:50%;animation:pdot 2s infinite;display:inline-block;flex-shrink:0}
+        @keyframes pdot{0%,100%{box-shadow:0 0 0 0 rgba(196,30,83,0.7)}50%{box-shadow:0 0 0 7px rgba(196,30,83,0)}}
+        .accent{font-style:italic;font-weight:600;background:linear-gradient(120deg,var(--burg-glow),var(--champ-bright) 50%,var(--burg-glow));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer-text 4s linear infinite;background-size:200% auto}
+        @keyframes shimmer-text{0%{background-position:0% center}100%{background-position:200% center}}
+        .panel{background:rgba(10,3,5,0.75);border:1px solid rgba(247,231,206,0.08);border-radius:16px;overflow:hidden;backdrop-filter:blur(24px);transition:border-color 0.4s,box-shadow 0.4s}
+        .panel:focus-within{border-color:rgba(196,30,83,0.5);box-shadow:0 0 50px rgba(125,10,46,0.35)}
+        .editor{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+        .gauges{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
+        @media(max-width:640px){.editor{grid-template-columns:1fr}.gauges{grid-template-columns:1fr}}
+        .gauge-panel{background:rgba(10,3,5,0.75);border:1px solid rgba(247,231,206,0.08);border-radius:16px;backdrop-filter:blur(24px)}
+        .main-btn{padding:15px 52px;background:var(--champ);color:#1a0408;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;border:none;border-radius:12px;cursor:pointer;letter-spacing:0.04em;transition:all 0.25s ease;box-shadow:0 4px 30px rgba(125,10,46,0.5)}
+        .main-btn:hover{background:var(--champ-bright);box-shadow:0 6px 50px rgba(125,10,46,0.7),0 0 80px rgba(196,30,83,0.2);transform:translateY(-2px)}
+        .main-btn:active{transform:translateY(0)}
+        .main-btn:disabled{background:rgba(247,231,206,0.08);color:rgba(247,231,206,0.2);box-shadow:none;transform:none}
+        @media(max-width:640px){.main-btn{width:100%;padding:16px;font-size:16px;border-radius:14px}}
+        .skel-line{height:11px;border-radius:6px;background:linear-gradient(90deg,rgba(125,10,46,0.2),rgba(196,30,83,0.4),rgba(125,10,46,0.2));background-size:300% 100%;animation:sweep 1.8s infinite;margin-bottom:12px}
+        @keyframes sweep{0%{background-position:100% 0}100%{background-position:-100% 0}}
+        @keyframes fadeDown{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .copy-btn{background:transparent;border:1px solid rgba(247,231,206,0.12);color:var(--champ-muted);font-size:11px;padding:4px 14px;border-radius:6px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.2s;letter-spacing:0.05em}
+        .copy-btn:hover{border-color:var(--champ-dim);color:var(--champ)}
+        .detecting-badge{font-size:10px;color:var(--burg-glow);letter-spacing:0.08em;animation:pdot 1s infinite}
+      `}</style>
+
+      <div ref={curRef} className="cursor" />
+      <div ref={ringRef} className="cursor-ring" />
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, overflow: "hidden" }}>
+        <div className="orb orb1" /><div className="orb orb2" /><div className="orb orb3" />
+      </div>
+      <div className="grid-bg" />
+      <div ref={ptclRef} style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none", overflow: "hidden" }} />
+
+      <main style={{ position: "relative", zIndex: 10, maxWidth: 980, margin: "0 auto", padding: "48px 20px 80px", fontFamily: "'Outfit', sans-serif", color: "var(--champ)" }}>
+
+        {/* HEADER */}
+        <div style={{ textAlign: "center", marginBottom: 48, animation: "fadeDown 1s ease both" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid rgba(247,231,206,0.15)", padding: "6px 18px", borderRadius: 100, fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--champ-muted)", marginBottom: 24, background: "rgba(125,10,46,0.15)" }}>
+            <span className="pulse-dot" /> Free · Private · Powered by Groq
+          </div>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(42px, 8vw, 80px)", fontWeight: 300, lineHeight: 1.05, letterSpacing: -2, color: "var(--champ-bright)", marginBottom: 6 }}>
+            Your AI text,<br /><span className="accent">undetectable.</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <div style={{ width: 60, height: 1, background: "linear-gradient(to right, transparent, var(--burg-glow), transparent)", margin: "24px auto" }} />
+          <p style={{ fontSize: "clamp(14px, 2.5vw, 17px)", fontWeight: 300, color: "var(--champ-dim)", maxWidth: 480, margin: "0 auto", lineHeight: 1.75 }}>
+            Detectors don&apos;t stand a chance.<br />
+            <strong style={{ fontWeight: 500, color: "var(--champ-bright)" }}>Paste AI. Get human. Walk away clean.</strong>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* STATS */}
+        <div style={{ display: "flex", justifyContent: "center", gap: "clamp(24px, 5vw, 56px)", marginBottom: 44, animation: "fadeUp 1s 0.3s ease both", flexWrap: "wrap" }}>
+          {[["∞", "Free uses"], ["0", "Data stored"], ["100%", "On-device"]].map(([num, label]) => (
+            <div key={label} style={{ textAlign: "center" }}>
+              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(26px, 5vw, 36px)", fontWeight: 600, color: "var(--champ-bright)", display: "block", lineHeight: 1 }}>{num}</span>
+              <span style={{ fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--champ-muted)", marginTop: 4, display: "block" }}>{label}</span>
+            </div>
+          ))}
         </div>
+
+        {/* EDITOR */}
+        <div className="editor">
+          <div className="panel">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid rgba(247,231,206,0.06)" }}>
+              <span style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--champ-muted)" }}>AI Text Input</span>
+              <span style={{ fontSize: 11, color: "rgba(247,231,206,0.2)" }}>
+                {detecting ? <span className="detecting-badge">● Analyzing...</span> : `${wordCount} words`}
+              </span>
+            </div>
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="Paste your AI-generated text here..."
+              style={{ width: "100%", background: "transparent", border: "none", outline: "none", resize: "none", color: "var(--champ-bright)", fontFamily: "'Outfit', sans-serif", fontSize: 14, lineHeight: 1.85, padding: 16, minHeight: 220, caretColor: "var(--burg-glow)" }}
+            />
+          </div>
+          <div className="panel">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid rgba(247,231,206,0.06)" }}>
+              <span style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--champ-muted)" }}>Humanized Output</span>
+              <button className="copy-btn" onClick={handleCopy}>{copied ? "Copied!" : "Copy"}</button>
+            </div>
+            <div style={{ padding: 16, minHeight: 220, fontSize: 14, lineHeight: 1.85, color: "var(--champ-bright)", wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+              {loading ? (
+                <div>
+                  {[100, 85, 95, 70, 80].map((w, i) => (<div key={i} className="skel-line" style={{ width: `${w}%` }} />))}
+                  <div style={{ fontSize: 12, color: "var(--burg-glow)", marginTop: 14, letterSpacing: "0.06em" }}>✦ Rewriting your text...</div>
+                </div>
+              ) : outputText ? outputText : (
+                <span style={{ color: "rgba(247,231,206,0.15)", fontStyle: "italic" }}>Your humanized text will appear here...</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* GAUGES */}
+        <div className="gauges">
+          <div className="gauge-panel">
+            <GaugeMeter percentage={inputAI} label="Input AI Score" />
+          </div>
+          <div className="gauge-panel">
+            <GaugeMeter percentage={outputAI} label="Output AI Score" />
+          </div>
+        </div>
+
+        {/* BUTTON */}
+        <div style={{ display: "flex", justifyContent: "center", animation: "fadeUp 1s 0.7s ease both" }}>
+          <button className="main-btn" onClick={handleHumanize} disabled={loading || !inputText.trim()}>
+            {loading ? "Humanizing..." : "✦ Humanize Text"}
+          </button>
+        </div>
+
+       <div style={{ textAlign: "center", marginTop: 40, fontSize: 11, color: "rgba(247,231,206,0.18)", letterSpacing: "0.08em", lineHeight: 2 }}>
+  <div style={{ textTransform: "uppercase" }}>Your text is never stored · Powered by Groq · Always free</div>
+  <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 24 }}>
+    {[["Terms of Service", "/terms"], ["Privacy Policy", "/privacy"], ["Disclaimer", "/disclaimer"]].map(([label, href]) => (
+      <a key={href} href={href} style={{ color: "rgba(247,231,206,0.25)", textDecoration: "none", fontSize: 11, letterSpacing: "0.06em", transition: "color 0.2s" }}
+        onMouseEnter={e => (e.currentTarget.style.color = "rgba(247,231,206,0.6)")}
+        onMouseLeave={e => (e.currentTarget.style.color = "rgba(247,231,206,0.25)")}>
+        {label}
+      </a>
+    ))}
+  </div>
+</div>
       </main>
-    </div>
+    </>
   );
 }
