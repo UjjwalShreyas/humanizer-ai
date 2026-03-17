@@ -215,8 +215,7 @@ export default function Home() {
         {/* HEADER */}
         <div style={{ textAlign: "center", marginBottom: 48, animation: "fadeDown 1s ease both" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid rgba(247,231,206,0.15)", padding: "6px 18px", borderRadius: 100, fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--champ-muted)", marginBottom: 24, background: "rgba(125,10,46,0.15)" }}>
-            <span className="pulse-dot" /> Free · Private · Powered by Groq
-          </div>
+<span className="pulse-dot" /> Free · Private · Open Source          </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(42px, 8vw, 80px)", fontWeight: 300, lineHeight: 1.05, letterSpacing: -2, color: "var(--champ-bright)", marginBottom: 6 }}>
             Your AI text,<br /><span className="accent">undetectable.</span>
           </h1>
@@ -291,8 +290,7 @@ export default function Home() {
        <div style={{ textAlign: "center", marginTop: 40, fontSize: 11, color: "rgba(247,231,206,0.18)", letterSpacing: "0.08em", lineHeight: 2 }}>
   <div style={{ textTransform: "uppercase" }}>Your text is never stored · Powered by Groq · Always free</div>
   <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 24 }}>
-    {[["Terms of Service", "/terms"], ["Privacy Policy", "/privacy"], ["Disclaimer", "/disclaimer"]].map(([label, href]) => (
-      <a key={href} href={href} style={{ color: "rgba(247,231,206,0.25)", textDecoration: "none", fontSize: 11, letterSpacing: "0.06em", transition: "color 0.2s" }}
+{[["Terms of Service", "/terms"], ["Privacy Policy", "/privacy"], ["Disclaimer", "/disclaimer"], ["GitHub", "https://github.com/ujjwa/humanizer-ai"]].map(([label, href]) => (      <a key={href} href={href} style={{ color: "rgba(247,231,206,0.25)", textDecoration: "none", fontSize: 11, letterSpacing: "0.06em", transition: "color 0.2s" }}
         onMouseEnter={e => (e.currentTarget.style.color = "rgba(247,231,206,0.6)")}
         onMouseLeave={e => (e.currentTarget.style.color = "rgba(247,231,206,0.25)")}>
         {label}
