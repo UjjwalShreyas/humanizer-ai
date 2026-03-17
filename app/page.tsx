@@ -290,7 +290,7 @@ export default function Home() {
        <div style={{ textAlign: "center", marginTop: 40, fontSize: 11, color: "rgba(247,231,206,0.18)", letterSpacing: "0.08em", lineHeight: 2 }}>
   <div style={{ textTransform: "uppercase" }}>Your text is never stored · Powered by Groq · Always free</div>
   <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 24 }}>
-{[["Terms of Service", "/terms"], ["Privacy Policy", "/privacy"], ["Disclaimer", "/disclaimer"], ["GitHub", "https://github.com/ujjwa/humanizer-ai"]].map(([label, href]) => (      <a key={href} href={href} style={{ color: "rgba(247,231,206,0.25)", textDecoration: "none", fontSize: 11, letterSpacing: "0.06em", transition: "color 0.2s" }}
+{[["Terms of Service", "/terms"], ["Privacy Policy", "/privacy"], ["Disclaimer", "/disclaimer"], ["GitHub", "https://github.com/ujjwa/humanizer-ai"]].map(([label, href]) => (``      <a key={href} href={href} style={{ color: "rgba(247,231,206,0.25)", textDecoration: "none", fontSize: 11, letterSpacing: "0.06em", transition: "color 0.2s" }}
         onMouseEnter={e => (e.currentTarget.style.color = "rgba(247,231,206,0.6)")}
         onMouseLeave={e => (e.currentTarget.style.color = "rgba(247,231,206,0.25)")}>
         {label}
