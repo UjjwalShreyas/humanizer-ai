@@ -159,8 +159,7 @@ export default function Home() {
   const ringRef = useRef<HTMLDivElement>(null);
   const ptclRef = useRef<HTMLDivElement>(null);
   const detectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const animationRef = useRef<number>();
-
+  const animationRef = useRef<number | null>(null);
   // Fixed word count calculation
   const wordCount = inputText.trim() === "" ? 0 : inputText.trim().split(/\s+/).filter(word => word.length > 0).length;
 
