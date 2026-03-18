@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
     // STEP 1: Humanize the text
     const humanizeCompletion = await groq.chat.completions.create({
-model: "moonshotai/kimi-k2-instruct",   messages: [
+model: "moonshotai/kimi-k2-instruct" as any,   messages: [
         {
           role: "system",
           content: `You are a human writer rewriting AI-generated text so it completely fools AI detectors. Your goal is to get the AI detection score below 10%.
@@ -60,7 +60,7 @@ MOST IMPORTANT RULE: You are not an AI assistant completing a task. You are a ti
 
     // STEP 2: Detect AI probability of OUTPUT
     const detectCompletion = await groq.chat.completions.create({
-model: "moonshotai/kimi-k2-instruct",   messages: [
+model: "moonshotai/kimi-k2-instruct" as any,   messages: [
         {
           role: "system",
           content: `You are an AI detection expert. Analyze the given text and estimate the probability that it was written by an AI.
