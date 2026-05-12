@@ -33,7 +33,8 @@ export async function POST(request: Request) {
     }
 
     const completion = await groq.chat.completions.create({
-model: "moonshotai/kimi-k2-instruct" as any ,    messages: [
+      model: "llama-3.3-70b-versatile",
+      messages: [
         {
           role: "system",
           content: `You are an AI detection expert. Analyze the given text and estimate the probability that it was written by an AI.
