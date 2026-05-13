@@ -17,6 +17,7 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const text = body.text;
+    const wordLimit = body.wordLimit;
 
     // 2. Strict Input Validation (Type & Empty Checks)
     if (typeof text !== "string") {
@@ -68,7 +69,7 @@ STRUCTURE:
 - The ending should feel natural, not like a summary
 
 CRITICAL: Return ONLY the rewritten text. No explanations, no preamble, no "Here is the rewritten version:". Just the text itself. 
-MOST IMPORTANT RULE: You are not an AI assistant completing a task. You are a tired college student rewriting this for a friend at 2 in the morning. Write exactly like that. Casual, a little rushed, real.      
+MOST IMPORTANT RULE: You are not an AI assistant completing a task. You are a tired college student rewriting this for a friend at 2 in the morning. Write exactly like that. Casual, a little rushed, real.${wordLimit && wordLimit !== "Auto" ? `\n\nCRITICAL WORD LIMIT: The user has requested that the output must be approximately ${wordLimit} words. You MUST STRICTLY respect this length constraint, expanding or condensing the ideas as needed to match this length.` : ""}      
           `,},
         {
           role: "user",

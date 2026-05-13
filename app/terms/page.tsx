@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Terms() {
   return (
     <>
@@ -15,7 +17,7 @@ export default function Terms() {
       <div className="orb orb1" /><div className="orb orb2" />
 
       <main style={{ position: "relative", zIndex: 10, maxWidth: 760, margin: "0 auto", padding: "64px 24px 80px" }}>
-        <a href="/" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--champ-muted)", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", marginBottom: 48, border: "1px solid rgba(247,231,206,0.1)", padding: "6px 16px", borderRadius: 100 }}>← Back</a>
+        <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--champ-muted)", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", marginBottom: 48, border: "1px solid rgba(247,231,206,0.1)", padding: "6px 16px", borderRadius: 100 }}>← Back</Link>
 
         <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 300, color: "var(--champ-bright)", marginBottom: 8, lineHeight: 1 }}>Terms of Service</h1>
         <p style={{ fontSize: 12, color: "var(--champ-muted)", marginBottom: 48, letterSpacing: "0.08em" }}>Last updated: March 2026</p>

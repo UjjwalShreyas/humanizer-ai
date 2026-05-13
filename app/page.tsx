@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useId } from "react";
 
 // Define proper types
 interface GaugeMeterProps {
@@ -42,8 +42,9 @@ function GaugeMeter({ percentage, label }: GaugeMeterProps) {
     return `${dashLength} ${totalLength}`;
   };
 
-  // Unique gradient ID
-  const gradientId = `grad-${label.replace(/\s/g, '')}-${Math.random().toString(36).substr(2, 9)}`;
+  // Unique gradient ID using React useId to avoid hydration mismatch
+  const id = useId();
+  const gradientId = `grad-${label.replace(/\s/g, '')}-${id.replace(/:/g, '')}`;
 
   return (
     <div style={{ textAlign: "center", padding: "20px 16px" }}>
@@ -154,6 +155,7 @@ export default function Home() {
   const [inputAI, setInputAI] = useState<number | null>(null);
   const [outputAI, setOutputAI] = useState<number | null>(null);
   const [particles, setParticles] = useState<React.ReactNode[]>([]);
+  const [wordLimit, setWordLimit] = useState("Auto");
   
   const curRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
@@ -262,7 +264,7 @@ export default function Home() {
       clearTimeout(detectTimer.current);
     }
 
-    detectTimer.current = setTimeout(detectText, 1500);
+    detectTimer.current = setTimeout(detectText, 300);
 
     return () => {
       if (detectTimer.current) {
@@ -283,7 +285,7 @@ export default function Home() {
       const res = await fetch("/api/humanize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: inputText }),
+        body: JSON.stringify({ text: inputText, wordLimit }),
       });
 
       if (!res.ok) {
@@ -304,7 +306,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [inputText]);
+  }, [inputText, wordLimit]);
 
   // Fixed copy handler
   const handleCopy = useCallback(() => {
@@ -836,13 +838,28 @@ export default function Home() {
               <span style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--champ-muted)" }}>
                 AI Text Input
               </span>
-              <span style={{ fontSize: 11, color: "rgba(247,231,206,0.2)" }}>
-                {detecting ? (
-                  <span className="detecting-badge">● Analyzing...</span>
-                ) : (
-                  `${wordCount} word${wordCount !== 1 ? 's' : ''}`
-                )}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <button 
+                  className="copy-btn" 
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      setInputText(text);
+                    } catch (err) {
+                      console.error('Failed to read clipboard contents: ', err);
+                    }
+                  }}
+                >
+                  Paste
+                </button>
+                <span style={{ fontSize: 11, color: "rgba(247,231,206,0.2)" }}>
+                  {detecting ? (
+                    <span className="detecting-badge">● Analyzing...</span>
+                  ) : (
+                    `${wordCount} word${wordCount !== 1 ? 's' : ''}`
+                  )}
+                </span>
+              </div>
             </div>
             <textarea
               value={inputText}
@@ -874,9 +891,31 @@ export default function Home() {
               padding: "12px 16px", 
               borderBottom: "1px solid rgba(247,231,206,0.06)" 
             }}>
-              <span style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--champ-muted)" }}>
-                Humanized Output
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ fontSize: 10, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--champ-muted)" }}>
+                  Word Limit:
+                </span>
+                <select 
+                  value={wordLimit}
+                  onChange={(e) => setWordLimit(e.target.value)}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid rgba(247, 231, 206, 0.12)",
+                    color: "var(--champ-muted)",
+                    fontSize: "11px",
+                    padding: "3px 8px",
+                    borderRadius: "6px",
+                    fontFamily: "'Outfit', sans-serif",
+                    cursor: "pointer",
+                    outline: "none"
+                  }}
+                >
+                  <option value="Auto" style={{ background: "var(--bg)", color: "var(--champ)" }}>Auto</option>
+                  <option value="100" style={{ background: "var(--bg)", color: "var(--champ)" }}>~100 words</option>
+                  <option value="200" style={{ background: "var(--bg)", color: "var(--champ)" }}>~200 words</option>
+                  <option value="300" style={{ background: "var(--bg)", color: "var(--champ)" }}>~300 words</option>
+                </select>
+              </div>
               <button 
                 className="copy-btn" 
                 onClick={handleCopy}
